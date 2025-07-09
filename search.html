@@ -29,12 +29,27 @@
       background: #2c3e50;
       color: white;
       padding: 20px 30px;
-      border-bottom: 1px solid #34495e;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .header h1 {
       font-size: 24px;
       font-weight: 600;
+    }
+
+    .analytics-link {
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .analytics-link:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .search-section {
@@ -136,6 +151,12 @@
     .results-count {
       font-size: 14px;
       color: #7f8c8d;
+    }
+
+    .performance-info {
+      font-size: 12px;
+      color: #95a5a6;
+      margin-left: 10px;
     }
 
     .sort-dropdown {
@@ -260,6 +281,27 @@
       color: #7f8c8d;
     }
 
+    .price-filter {
+      margin-top: 20px;
+    }
+
+    .price-filter label {
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: block;
+      color: #2c3e50;
+    }
+
+    .price-filter input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .price-filter #priceDisplay {
+      font-size: 14px;
+      color: #333;
+    }
+
     @media (max-width: 768px) {
       .main-content {
         flex-direction: column;
@@ -276,6 +318,7 @@
   <div class="container">
     <div class="header">
       <h1>Product Search</h1>
+      <a href="analytics.html" class="analytics-link">📊 Analytics</a>
     </div>
 
     <div class="search-section">
@@ -285,13 +328,21 @@
     <div class="main-content">
       <div class="sidebar">
         <div id="facets"></div>
+        <div class="price-filter">
+          <label>Price Range</label>
+          <input type="range" id="priceMin" min="0" max="2000" value="0">
+          <input type="range" id="priceMax" min="0" max="2000" value="2000">
+          <span id="priceDisplay">$0 - $2000</span>
+        </div>
       </div>
 
       <div class="results-section">
         <div class="active-filters" id="activeFilters"></div>
-
         <div class="results-header">
-          <div id="resultsCount" class="results-count"></div>
+          <div>
+            <span id="resultsCount" class="results-count"></span>
+            <span id="performanceInfo" class="performance-info"></span>
+          </div>
           <select id="sortBy" class="sort-dropdown">
             <option value="">Sort by Relevance</option>
             <option value="price:asc">Price: Low to High</option>
@@ -310,16 +361,21 @@
     const results = document.getElementById('results');
     const facetsContainer = document.getElementById('facets');
     const resultsCount = document.getElementById('resultsCount');
+    const performanceInfo = document.getElementById('performanceInfo');
     const sortBy = document.getElementById('sortBy');
     const activeFiltersContainer = document.getElementById('activeFilters');
+    const priceMin = document.getElementById('priceMin');
+    const priceMax = document.getElementById('priceMax');
+    const priceDisplay = document.getElementById('priceDisplay');
 
     let currentQuery = '';
     let currentSort = '';
-    let activeFilters = new Map(); // fieldName -> Set of values
+    let activeFilters = new Map();
 
     async function search() {
       const query = searchBox.value || '*';
       currentQuery = query;
+      const startTime = performance.now();
 
       try {
         results.innerHTML = '<div class="loading">Searching...</div>';
@@ -334,9 +390,19 @@
         });
 
         const data = await response.json();
+        const endTime = performance.now();
+        const searchTime = Math.round(endTime - startTime);
+
         displayResults(data.hits, data.found);
         displayFacets(data.facet_counts);
         displayActiveFilters();
+
+        // Update performance info
+        performanceInfo.textContent = `(${searchTime}ms)`;
+
+        // Track analytics with performance
+        trackSearchAnalytics(query, data.found, Array.from(activeFilters.entries()), searchTime);
+
       } catch (error) {
         results.innerHTML = '<div class="no-results">Error searching. Make sure Typesense is running!</div>';
         console.error('Search error:', error);
@@ -344,19 +410,31 @@
     }
 
     function buildFilterParam() {
-      if (activeFilters.size === 0) return '';
-
       const filters = [];
+
+      // Price range filter
+      const minPrice = parseFloat(priceMin.value);
+      const maxPrice = parseFloat(priceMax.value);
+      if (minPrice > 0 || maxPrice < 2000) {
+        filters.push(`price:>=${minPrice} && price:<=${maxPrice}`);
+      }
+
+      // Other filters
       for (const [field, values] of activeFilters) {
         if (values.size > 0) {
           const valuesArray = Array.from(values);
           if (valuesArray.length === 1) {
-            filters.push(`${field}:${valuesArray[0]}`);
+            if (field === 'in_stock') {
+              filters.push(`${field}:${valuesArray[0]}`);
+            } else {
+              filters.push(`${field}:=${valuesArray[0]}`);
+            }
           } else {
             filters.push(`${field}:[${valuesArray.join(',')}]`);
           }
         }
       }
+
       return filters.length > 0 ? `&filter_by=${encodeURIComponent(filters.join(' && '))}` : '';
     }
 
@@ -374,30 +452,30 @@
         const originalPrice = doc.original_price || doc.price;
 
         return `
-                    <div class="product">
-                        <h3>${doc.name}</h3>
-                        <div class="product-meta">
-                            <span>${doc.brand}</span>
-                            <span>${doc.category}</span>
-                            ${doc.subcategory ? `<span>${doc.subcategory}</span>` : ''}
-                        </div>
-                        <div class="product-description">${doc.description}</div>
-                        <div class="product-details">
-                            <div>Rating: ${doc.rating} (${doc.review_count} reviews)</div>
-                            ${doc.color ? `<div>Color: ${doc.color}</div>` : ''}
-                            ${doc.size ? `<div>Size: ${doc.size}</div>` : ''}
-                            <div>Stock: ${doc.stock_quantity} units</div>
-                        </div>
-                        <div class="price-section">
-                            <span class="current-price">$${doc.price}</span>
-                            ${hasDiscount ? `<span class="original-price">$${originalPrice}</span>` : ''}
-                            ${hasDiscount ? `<span class="discount">${doc.discount_percentage}% OFF</span>` : ''}
-                            <span class="stock-status ${doc.in_stock ? 'in-stock' : 'out-stock'}">
-                                ${doc.in_stock ? 'In Stock' : 'Out of Stock'}
-                            </span>
-                        </div>
-                    </div>
-                `;
+          <div class="product">
+            <h3>${doc.name}</h3>
+            <div class="product-meta">
+              <span>${doc.brand}</span>
+              <span>${doc.category}</span>
+              ${doc.subcategory ? `<span>${doc.subcategory}</span>` : ''}
+            </div>
+            <div class="product-description">${doc.description}</div>
+            <div class="product-details">
+              <div>Rating: ${doc.rating} (${doc.review_count} reviews)</div>
+              ${doc.color ? `<div>Color: ${doc.color}</div>` : ''}
+              ${doc.size ? `<div>Size: ${doc.size}</div>` : ''}
+              <div>Stock: ${doc.stock_quantity} units</div>
+            </div>
+            <div class="price-section">
+              <span class="current-price">$${doc.price}</span>
+              ${hasDiscount ? `<span class="original-price">$${originalPrice}</span>` : ''}
+              ${hasDiscount ? `<span class="discount">${doc.discount_percentage}% OFF</span>` : ''}
+              <span class="stock-status ${doc.in_stock ? 'in-stock' : 'out-stock'}">
+                ${doc.in_stock ? 'In Stock' : 'Out of Stock'}
+              </span>
+            </div>
+          </div>
+        `;
       }).join('');
     }
 
@@ -411,23 +489,23 @@
         if (facet.counts.length === 0) return '';
 
         return `
-                    <div class="facet-section">
-                        <div class="facet-title">${formatFacetName(facet.field_name)}</div>
-                        ${facet.counts.slice(0, 10).map(item => {
-          const isSelected = activeFilters.has(facet.field_name) &&
-            activeFilters.get(facet.field_name).has(item.value);
-          return `
-                                <div class="facet-item ${isSelected ? 'selected' : ''}" 
-                                     onclick="toggleFilter('${facet.field_name}', '${item.value}')">
-                                    <input type="checkbox" class="facet-checkbox" 
-                                           ${isSelected ? 'checked' : ''} readonly>
-                                    <span class="facet-label">${item.value}</span>
-                                    <span class="facet-count">${item.count}</span>
-                                </div>
-                            `;
-        }).join('')}
-                    </div>
-                `;
+          <div class="facet-section">
+            <div class="facet-title">${formatFacetName(facet.field_name)}</div>
+            ${facet.counts.slice(0, 10).map(item => {
+              const isSelected = activeFilters.has(facet.field_name) &&
+                activeFilters.get(facet.field_name).has(item.value);
+              return `
+                <div class="facet-item ${isSelected ? 'selected' : ''}" 
+                     onclick="toggleFilter('${facet.field_name}', '${item.value}')">
+                  <input type="checkbox" class="facet-checkbox" 
+                         ${isSelected ? 'checked' : ''} readonly>
+                  <span class="facet-label">${item.value}</span>
+                  <span class="facet-count">${item.count}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
       }).join('');
     }
 
@@ -436,11 +514,11 @@
       for (const [field, values] of activeFilters) {
         for (const value of values) {
           filterTags.push(`
-                        <div class="filter-tag">
-                            ${formatFacetName(field)}: ${value}
-                            <span class="remove" onclick="removeFilter('${field}', '${value}')">&times;</span>
-                        </div>
-                    `);
+            <div class="filter-tag">
+              ${formatFacetName(field)}: ${value}
+              <span class="remove" onclick="removeFilter('${field}', '${value}')">&times;</span>
+            </div>
+          `);
         }
       }
       activeFiltersContainer.innerHTML = filterTags.join('');
@@ -487,6 +565,28 @@
       return names[fieldName] || fieldName;
     }
 
+    function trackSearchAnalytics(query, resultCount, filters, searchTime) {
+      const analytics = JSON.parse(localStorage.getItem('searchAnalytics') || '[]');
+      analytics.push({
+        query,
+        resultCount,
+        filters,
+        searchTime,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('searchAnalytics', JSON.stringify(analytics.slice(-1000)));
+    }
+
+    function updatePriceDisplay() {
+      const minValue = priceMin.value;
+      const maxValue = priceMax.value;
+      priceDisplay.textContent = `$${minValue} - $${maxValue}`;
+
+      const isDefaultRange = minValue == 0 && maxValue == 2000;
+      priceDisplay.style.color = isDefaultRange ? '#333' : '#3498db';
+      priceDisplay.style.fontWeight = isDefaultRange ? 'normal' : 'bold';
+    }
+
     // Event listeners
     searchBox.addEventListener('input', search);
     sortBy.addEventListener('change', (e) => {
@@ -494,7 +594,22 @@
       search();
     });
 
-    // Load all products on page load
+    priceMin.addEventListener('input', () => {
+      const minValue = parseInt(priceMin.value);
+      const maxValue = parseInt(priceMax.value);
+      if (minValue > maxValue) priceMin.value = maxValue;
+      updatePriceDisplay();
+      search();
+    });
+
+    priceMax.addEventListener('input', () => {
+      const minValue = parseInt(priceMin.value);
+      const maxValue = parseInt(priceMax.value);
+      if (maxValue < minValue) priceMax.value = minValue;
+      updatePriceDisplay();
+      search();
+    });
+
     window.addEventListener('load', () => {
       searchBox.value = '*';
       search();

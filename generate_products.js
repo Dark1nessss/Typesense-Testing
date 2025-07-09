@@ -69,14 +69,20 @@ function generateProducts() {
     return products;
 }
 
+// More realistic product names
 function generateProductName(subcategory, brand, index) {
-    const models = ['Pro', 'Max', 'Ultra', 'Plus', 'Lite', 'Elite', 'Premium', 'Standard', 'Advanced', 'Classic'];
-    const numbers = ['2024', '15', '14', '13', '12', '11', '10', 'X', 'XS', 'Air'];
+    const productTypes = {
+        'Smartphones': ['Galaxy', 'iPhone', 'Pixel', 'Xperia', 'OnePlus', 'Mi'],
+        'Laptops': ['MacBook', 'ThinkPad', 'Inspiron', 'Pavilion', 'Surface', 'ZenBook', 'ROG', 'Predator'],
+        'Running Shoes': ['Air Max', 'Ultraboost', 'Pegasus', 'React', 'Free Run', 'Gel', 'Wave', 'Zoom'],
+        'Headphones': ['AirPods', 'WH', 'QuietComfort', 'Studio', 'Elite', 'Momentum']
+    };
     
-    const model = models[Math.floor(Math.random() * models.length)];
-    const number = numbers[Math.floor(Math.random() * numbers.length)];
+    const types = productTypes[subcategory] || ['Pro', 'Max', 'Ultra'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const model = Math.floor(Math.random() * 50) + 1;
     
-    return `${brand} ${subcategory} ${model} ${number}`;
+    return `${brand} ${type} ${model}`;
 }
 
 function generateDescription(subcategory, brand) {
@@ -117,6 +123,21 @@ function generateReleaseDate() {
     const end = new Date();
     const randomDate = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
     return randomDate.toISOString().split('T')[0];
+}
+
+// Add seasonal trends
+function addSeasonalPricing(price, category) {
+    const month = new Date().getMonth();
+    const isHolidaySeason = [10, 11].includes(month); // Nov, Dec
+    const isSummerSale = [5, 6, 7].includes(month); // Jun, Jul, Aug
+    
+    if (isHolidaySeason && category === 'Electronics') {
+        return price * 0.85; // 15% holiday discount
+    }
+    if (isSummerSale && category === 'Clothing & Shoes') {
+        return price * 0.7; // 30% summer sale
+    }
+    return price;
 }
 
 // Generate and save products
