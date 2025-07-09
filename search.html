@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Search</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: #2c3e50;
+      color: white;
+      padding: 20px 30px;
+      border-bottom: 1px solid #34495e;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .search-section {
+      padding: 20px 30px;
+      background: white;
+      border-bottom: 1px solid #eee;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .search-box:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+
+    .main-content {
+      display: flex;
+      min-height: calc(100vh - 120px);
+    }
+
+    .sidebar {
+      width: 280px;
+      background: #f8f9fa;
+      border-right: 1px solid #eee;
+      padding: 20px;
+    }
+
+    .facet-section {
+      margin-bottom: 25px;
+    }
+
+    .facet-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #2c3e50;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .facet-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .facet-item:hover {
+      color: #3498db;
+    }
+
+    .facet-checkbox {
+      margin-right: 8px;
+    }
+
+    .facet-label {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .facet-count {
+      background: #ecf0f1;
+      color: #7f8c8d;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 12px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .facet-item.selected .facet-count {
+      background: #3498db;
+      color: white;
+    }
+
+    .results-section {
+      flex: 1;
+      padding: 20px 30px;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .results-count {
+      font-size: 14px;
+      color: #7f8c8d;
+    }
+
+    .sort-dropdown {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      font-size: 14px;
+    }
+
+    .active-filters {
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-tag {
+      background: #3498db;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .filter-tag .remove {
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .results {
+      display: grid;
+      gap: 20px;
+    }
+
+    .product {
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 20px;
+      transition: box-shadow 0.2s;
+    }
+
+    .product:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .product h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+
+    .product-meta {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #7f8c8d;
+    }
+
+    .product-description {
+      color: #555;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .product-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .price-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .current-price {
+      font-size: 20px;
+      font-weight: 600;
+      color: #e74c3c;
+    }
+
+    .original-price {
+      font-size: 16px;
+      color: #95a5a6;
+      text-decoration: line-through;
+    }
+
+    .discount {
+      background: #e74c3c;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    .stock-status {
+      margin-left: auto;
+      font-size: 14px;
+    }
+
+    .in-stock {
+      color: #27ae60;
+    }
+
+    .out-stock {
+      color: #e74c3c;
+    }
+
+    .loading,
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: #7f8c8d;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Product Search</h1>
+    </div>
+
+    <div class="search-section">
+      <input type="text" id="searchBox" class="search-box" placeholder="Search products..." autocomplete="off">
+    </div>
+
+    <div class="main-content">
+      <div class="sidebar">
+        <div id="facets"></div>
+      </div>
+
+      <div class="results-section">
+        <div class="active-filters" id="activeFilters"></div>
+
+        <div class="results-header">
+          <div id="resultsCount" class="results-count"></div>
+          <select id="sortBy" class="sort-dropdown">
+            <option value="">Sort by Relevance</option>
+            <option value="price:asc">Price: Low to High</option>
+            <option value="price:desc">Price: High to Low</option>
+            <option value="rating:desc">Rating: High to Low</option>
+            <option value="review_count:desc">Most Reviewed</option>
+          </select>
+        </div>
+        <div id="results" class="results"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const searchBox = document.getElementById('searchBox');
+    const results = document.getElementById('results');
+    const facetsContainer = document.getElementById('facets');
+    const resultsCount = document.getElementById('resultsCount');
+    const sortBy = document.getElementById('sortBy');
+    const activeFiltersContainer = document.getElementById('activeFilters');
+
+    let currentQuery = '';
+    let currentSort = '';
+    let activeFilters = new Map(); // fieldName -> Set of values
+
+    async function search() {
+      const query = searchBox.value || '*';
+      currentQuery = query;
+
+      try {
+        results.innerHTML = '<div class="loading">Searching...</div>';
+
+        const sortParam = currentSort ? `&sort_by=${currentSort}` : '';
+        const filterParam = buildFilterParam();
+
+        const response = await fetch(`http://localhost:8108/collections/products_v2/documents/search?q=${encodeURIComponent(query)}&query_by=name,description,tags,brand&per_page=20&facet_by=category,subcategory,brand,color,in_stock,discount_percentage,rating${sortParam}${filterParam}`, {
+          headers: {
+            'X-TYPESENSE-API-KEY': 'xyz'
+          }
+        });
+
+        const data = await response.json();
+        displayResults(data.hits, data.found);
+        displayFacets(data.facet_counts);
+        displayActiveFilters();
+      } catch (error) {
+        results.innerHTML = '<div class="no-results">Error searching. Make sure Typesense is running!</div>';
+        console.error('Search error:', error);
+      }
+    }
+
+    function buildFilterParam() {
+      if (activeFilters.size === 0) return '';
+
+      const filters = [];
+      for (const [field, values] of activeFilters) {
+        if (values.size > 0) {
+          const valuesArray = Array.from(values);
+          if (valuesArray.length === 1) {
+            filters.push(`${field}:${valuesArray[0]}`);
+          } else {
+            filters.push(`${field}:[${valuesArray.join(',')}]`);
+          }
+        }
+      }
+      return filters.length > 0 ? `&filter_by=${encodeURIComponent(filters.join(' && '))}` : '';
+    }
+
+    function displayResults(hits, totalFound) {
+      resultsCount.textContent = `${totalFound} products found`;
+
+      if (hits.length === 0) {
+        results.innerHTML = '<div class="no-results">No products found</div>';
+        return;
+      }
+
+      results.innerHTML = hits.map(hit => {
+        const doc = hit.document;
+        const hasDiscount = doc.discount_percentage && doc.discount_percentage > 0;
+        const originalPrice = doc.original_price || doc.price;
+
+        return `
+                    <div class="product">
+                        <h3>${doc.name}</h3>
+                        <div class="product-meta">
+                            <span>${doc.brand}</span>
+                            <span>${doc.category}</span>
+                            ${doc.subcategory ? `<span>${doc.subcategory}</span>` : ''}
+                        </div>
+                        <div class="product-description">${doc.description}</div>
+                        <div class="product-details">
+                            <div>Rating: ${doc.rating} (${doc.review_count} reviews)</div>
+                            ${doc.color ? `<div>Color: ${doc.color}</div>` : ''}
+                            ${doc.size ? `<div>Size: ${doc.size}</div>` : ''}
+                            <div>Stock: ${doc.stock_quantity} units</div>
+                        </div>
+                        <div class="price-section">
+                            <span class="current-price">$${doc.price}</span>
+                            ${hasDiscount ? `<span class="original-price">$${originalPrice}</span>` : ''}
+                            ${hasDiscount ? `<span class="discount">${doc.discount_percentage}% OFF</span>` : ''}
+                            <span class="stock-status ${doc.in_stock ? 'in-stock' : 'out-stock'}">
+                                ${doc.in_stock ? 'In Stock' : 'Out of Stock'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+      }).join('');
+    }
+
+    function displayFacets(facetCounts) {
+      if (!facetCounts || facetCounts.length === 0) {
+        facetsContainer.innerHTML = '<p>No filters available</p>';
+        return;
+      }
+
+      facetsContainer.innerHTML = facetCounts.map(facet => {
+        if (facet.counts.length === 0) return '';
+
+        return `
+                    <div class="facet-section">
+                        <div class="facet-title">${formatFacetName(facet.field_name)}</div>
+                        ${facet.counts.slice(0, 10).map(item => {
+          const isSelected = activeFilters.has(facet.field_name) &&
+            activeFilters.get(facet.field_name).has(item.value);
+          return `
+                                <div class="facet-item ${isSelected ? 'selected' : ''}" 
+                                     onclick="toggleFilter('${facet.field_name}', '${item.value}')">
+                                    <input type="checkbox" class="facet-checkbox" 
+                                           ${isSelected ? 'checked' : ''} readonly>
+                                    <span class="facet-label">${item.value}</span>
+                                    <span class="facet-count">${item.count}</span>
+                                </div>
+                            `;
+        }).join('')}
+                    </div>
+                `;
+      }).join('');
+    }
+
+    function displayActiveFilters() {
+      const filterTags = [];
+      for (const [field, values] of activeFilters) {
+        for (const value of values) {
+          filterTags.push(`
+                        <div class="filter-tag">
+                            ${formatFacetName(field)}: ${value}
+                            <span class="remove" onclick="removeFilter('${field}', '${value}')">&times;</span>
+                        </div>
+                    `);
+        }
+      }
+      activeFiltersContainer.innerHTML = filterTags.join('');
+    }
+
+    function toggleFilter(fieldName, value) {
+      if (!activeFilters.has(fieldName)) {
+        activeFilters.set(fieldName, new Set());
+      }
+
+      const fieldValues = activeFilters.get(fieldName);
+      if (fieldValues.has(value)) {
+        fieldValues.delete(value);
+        if (fieldValues.size === 0) {
+          activeFilters.delete(fieldName);
+        }
+      } else {
+        fieldValues.add(value);
+      }
+
+      search();
+    }
+
+    function removeFilter(fieldName, value) {
+      if (activeFilters.has(fieldName)) {
+        activeFilters.get(fieldName).delete(value);
+        if (activeFilters.get(fieldName).size === 0) {
+          activeFilters.delete(fieldName);
+        }
+      }
+      search();
+    }
+
+    function formatFacetName(fieldName) {
+      const names = {
+        'category': 'Category',
+        'subcategory': 'Subcategory',
+        'brand': 'Brand',
+        'color': 'Color',
+        'in_stock': 'Availability',
+        'discount_percentage': 'Discount',
+        'rating': 'Rating'
+      };
+      return names[fieldName] || fieldName;
+    }
+
+    // Event listeners
+    searchBox.addEventListener('input', search);
+    sortBy.addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      search();
+    });
+
+    // Load all products on page load
+    window.addEventListener('load', () => {
+      searchBox.value = '*';
+      search();
+    });
+  </script>
+</body>
+
+</html>
