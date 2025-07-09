@@ -274,9 +274,9 @@
 
     function getPerformanceBadge(searchTime) {
       if (!searchTime) return '';
-      if (searchTime <= 50) return '<span class="performance-badge">⚡ Fast</span>';
-      if (searchTime <= 200) return '<span class="performance-badge medium">⚠ Medium</span>';
-      return '<span class="performance-badge slow">🐌 Slow</span>';
+      if (searchTime <= 50) return '<span class="performance-badge">Fast</span>';
+      if (searchTime <= 200) return '<span class="performance-badge medium">Medium</span>';
+      return '<span class="performance-badge slow">Slow</span>';
     }
 
     function loadDashboard() {
